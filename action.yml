@@ -1,4 +1,4 @@
-name: 'CodeGuard PR Review by ChatGPT'
+name: 'CodeGuard PR Review'
 description: 'A Github Action to Identify Potential Issues in Pull Requests'
 branding:
   icon: activity

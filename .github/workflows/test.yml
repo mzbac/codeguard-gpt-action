@@ -3,11 +3,11 @@ on: [pull_request]
 name: Test ChatGPT
 
 jobs:
-  chatgpt_comment:
+  codeguard:
     runs-on: ubuntu-latest
-    name: Let chatgpt comment on your PR.
+    name: ChatGPT review PR
     steps:
-      - name: ChatGPT comment
+      - name: ChatGPT review PR
         uses: mzbac/codeguard-gpt-action@HEAD
         with:
           number: ${{ github.event.pull_request.number }}
