@@ -1,0 +1,16 @@
+name: 'CodeGuard PR Review by ChatGPT'
+description: 'A Github Action to Identify Potential Issues in Pull Requests'
+branding:
+  icon: activity
+  color: blue
+inputs:
+  extensions: 
+    required: true
+    description: 'The file extension that will trigger the CodeGuard PR Review'
+    default: 'ts,tsx'
+  number:
+    description: "Pull Request number"
+    required: true
+runs:
+  using: 'node16'
+  main: 'dist/index.js'
