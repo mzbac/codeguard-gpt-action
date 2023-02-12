@@ -7,6 +7,7 @@ import {addLineNumbers} from './utils'
 
 const octokit = new Octokit()
 
+
 async function run(): Promise<void> {
   try {
     const extensions = core.getInput('extensions').split(',')
