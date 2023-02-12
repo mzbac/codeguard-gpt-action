@@ -8649,7 +8649,7 @@ const HEADERS = {
     "Content-Type": "application/json",
     Accept: "text/event-stream",
     cookie: process.env.CHATGPT_COOKIES || "",
-    Authorization: process.env.CHATGPT_AUTH_TOEKN || "",
+    Authorization: process.env.CHATGPT_AUTH_TOKEN || "",
 };
 ;
 /**
@@ -8683,8 +8683,10 @@ function sendPostRequest(options = {}) {
                     model: MODEL,
                 }),
             });
+            if (response.status !== 200)
+                throw new Error(`bad request status code :${response.status}`);
             const responseText = yield response.text();
-            const chunks = responseText.split("\n").filter(s => !!s);
+            const chunks = responseText.split("\n").filter((s) => !!s);
             const finalChunk = chunks[chunks.length - 2];
             const jsonString = finalChunk.replace(/^data:/, '');
             try {
