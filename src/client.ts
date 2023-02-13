@@ -21,6 +21,7 @@ export async function addCommentToPR(
   filePath: string,
   comment: string,
   commitId: string,
+  line: number,
   octokit: Octokit
 ): Promise<void> {
   try {
@@ -32,7 +33,7 @@ export async function addCommentToPR(
         pull_number: pullNumber,
         body: comment,
         path: filePath,
-        line: 1,
+        line,
         side: 'RIGHT',
         commit_id: commitId
       }
@@ -59,9 +60,8 @@ export async function postCommentToPR(
         body: comment
       }
     )
-    // eslint-disable-next-line no-console
-    console.log(`Comment posted successfully: ${result.data.html_url}`)
+    core.debug(`Comment posted successfully: ${result.data.html_url}`)
   } catch (error) {
-    throw new Error(`Failed to post comment: ${error}`)
+    core.debug(`Failed to post comment: ${error}`)
   }
 }
