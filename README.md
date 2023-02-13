@@ -31,7 +31,7 @@ jobs:
     name: ChatGPT Plus review PR
     steps:
       - name: ChatGPT Plus review PR
-        uses: mzbac/codeguard-gpt-action@HEAD
+        uses: mzbac/codeguard-gpt-action@0.0.10
         with:
           number: ${{ github.event.pull_request.number }}
         env:
