@@ -1,8 +1,6 @@
 # CodeGuard PR Review by ChatGPT
 
-Get reliable and efficient code reviews for your pull requests with the help of OpenAI's ChatGPT.
-
-**Please note:** This Github action is currently in development and not recommended for use in production environments.
+Get reliable and efficient code reviews for your pull requests with the help of OpenAI's ChatGPT Plus, available exclusively to paid users.
 
 ## Features
 
@@ -13,31 +11,44 @@ Get reliable and efficient code reviews for your pull requests with the help of 
 
 ## Limitations
 
-- The action is of experimental quality and may not always provide accurate results.
-- ChatGPT may generate misleading comments that could confuse your contributors.
+- The action is only available to paid users of ChatGPT Plus.
+- The action may generate misleading comments that could confuse your contributors.
 
 ## Usage
-To use CodeGuard PR Review by ChatGPT, add the following to your Github Actions workflow file (`.yml`):
+
+This GitHub action can be used to perform code reviews on pull requests using ChatGPT Plus, an AI language model by OpenAI, available exclusively to paid users.
+
+To use this action, you need to be a paid user of ChatGPT Plus and create a new workflow in your GitHub repository and add the following YAML code:
+
 ```yml
 on: [pull_request]
 
-name: Test ChatGPT
+name: Test ChatGPT Plus
 
 jobs:
   codeguard:
     runs-on: ubuntu-latest
-    name: ChatGPT review PR
+    name: ChatGPT Plus review PR
     steps:
-      - name: ChatGPT review PR
-        uses: mzbac/codeguard-gpt-action@0.0.1
+      - name: ChatGPT Plus review PR
+        uses: mzbac/codeguard-gpt-action@HEAD
         with:
           number: ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_COOKIES: ${{ secrets.CHATGPT_COOKIES }}
-          CHATGPT_AUTH_TOKEN: ${{ secrets.CHATGPT_AUTH_TOKEN }} 
+          CHATGPT_AUTH_TOKEN: ${{ secrets.CHATGPT_AUTH_TOKEN }}
+          CODEGUARD_COMMENT_BY_LINE: true
 ```
 
+The action will be triggered every time a pull request is opened or updated.
+
+Note that you need to define the following secrets in your GitHub repository:
+
+- `CHATGPT_COOKIES`: The cookies required to access the OpenAI API.
+- `CHATGPT_AUTH_TOKEN`: The authentication token required to access the OpenAI API.
+
+You can also set the `CODEGUARD_COMMENT_BY_LINE` environment variable to true if you want ChatGPT to comment on a specific line of code.
 This will trigger the action every time a pull request is opened or updated, and will provide a thorough review of the pull request using the advanced natural language processing technology of OpenAI's ChatGPT.
 
 For more information on how to use and configure the action, please refer to the official documentation.
