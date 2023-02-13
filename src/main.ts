@@ -12,11 +12,11 @@ import {
 } from './utils'
 
 const octokit = new Octokit()
-const extensions = ['ts', 'tsx']
 
 async function run(): Promise<void> {
   try {
-    const pullNumber = parseInt(process.env.PULL_NUMBER!)
+    const extensions = core.getInput('extensions').split(',')
+    const pullNumber = parseInt(core.getInput('number'))
 
     const [owner, repo] = process.env.GITHUB_REPOSITORY!.split('/')
 
