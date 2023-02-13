@@ -62,7 +62,7 @@ function getRawFileContent(url) {
     });
 }
 exports.getRawFileContent = getRawFileContent;
-function addCommentToPR(owner, repo, pullNumber, filePath, comment, commitId, octokit) {
+function addCommentToPR(owner, repo, pullNumber, filePath, comment, commitId, line, octokit) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             yield octokit.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/comments', {
@@ -71,7 +71,7 @@ function addCommentToPR(owner, repo, pullNumber, filePath, comment, commitId, oc
                 pull_number: pullNumber,
                 body: comment,
                 path: filePath,
-                line: 1,
+                line,
                 side: 'RIGHT',
                 commit_id: commitId
             });
@@ -91,11 +91,10 @@ function postCommentToPR(owner, repo, pullNumber, comment, octokit) {
                 issue_number: pullNumber,
                 body: comment
             });
-            // eslint-disable-next-line no-console
-            console.log(`Comment posted successfully: ${result.data.html_url}`);
+            core.debug(`Comment posted successfully: ${result.data.html_url}`);
         }
         catch (error) {
-            throw new Error(`Failed to post comment: ${error}`);
+            core.debug(`Failed to post comment: ${error}`);
         }
     });
 }
@@ -138,18 +137,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+/* eslint-disable sort-imports */
 const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
 const chatgpt_plus_api_client_1 = __nccwpck_require__(8389);
-// eslint-disable-next-line sort-imports
 const client_1 = __nccwpck_require__(1565);
+const prompt_1 = __nccwpck_require__(2063);
 const utils_1 = __nccwpck_require__(918);
 const octokit = new action_1.Octokit();
+const extensions = ['ts', 'tsx'];
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const extensions = core.getInput('extensions').split(',');
-            const pullNumber = parseInt(core.getInput('number'));
+            const pullNumber = parseInt(process.env.PULL_NUMBER);
             const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
             const files = yield octokit.request(`GET /repos/${owner}/${repo}/pulls/${pullNumber}/files`);
             for (const file of files.data) {
@@ -157,24 +157,74 @@ function run() {
                 if (extensions.includes(extension)) {
                     const text = yield (0, client_1.getRawFileContent)(file.raw_url);
                     const textWithLineNumber = (0, utils_1.addLineNumbers)(text);
-                    const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
-                        prompt: `Act as a code guard that has deep knowledge of frontend software development, you will review the pull request files change below for a project is written in Typescript. Always start your suggestions with 'As a codeguard, here are my suggestions' and mention file name. Please provide suggestions for making the code more readable, maintainable and secure, mentioning line numbers with each suggestion and only provide suggestions and one line code snippets corresponding to those lines of suggestion:
-          ${file.filename}
-          \`\`\`ts
-          ${textWithLineNumber}
-          \`\`\``
-                    });
-                    yield (0, client_1.postCommentToPR)(owner, repo, pullNumber, response.message.content.parts[0], octokit);
+                    if (process.env.CODEGUARD_COMMENT_BY_LINE) {
+                        const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
+                            prompt: (0, prompt_1.promptForJson)(textWithLineNumber)
+                        });
+                        let suggestions;
+                        try {
+                            suggestions = JSON.parse(response.message.content.parts[0]);
+                        }
+                        catch (err) {
+                            throw new Error(`ChatGPT response is not a valid json:\n ${response.message.content.parts[0]}`);
+                        }
+                        if (!(0, utils_1.isSuggestions)(suggestions)) {
+                            throw new Error(`ChatGPT response is not of type Suggestions\n${JSON.stringify(suggestions)}`);
+                        }
+                        const changedLines = (0, utils_1.getChangedLineNumbers)(file.patch);
+                        for (const line in suggestions) {
+                            if (changedLines.some(({ start, end }) => start <= Number(line) && Number(line) <= end)) {
+                                yield (0, client_1.addCommentToPR)(owner, repo, pullNumber, file.filename, `
+### Line ${line}
+## CodeGuard Suggestions
+**Suggestion:** ${suggestions[line].suggestion}
+**Reason:** ${suggestions[line].reason}\n
+`, (0, utils_1.extractCommitHash)(file.raw_url), Number(line), octokit);
+                            }
+                        }
+                    }
+                    else {
+                        const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
+                            prompt: (0, prompt_1.promptForText)(file.filename, textWithLineNumber)
+                        });
+                        yield (0, client_1.postCommentToPR)(owner, repo, pullNumber, response.message.content.parts[0], octokit);
+                    }
                 }
             }
         }
         catch (error) {
             if (error instanceof Error)
-                core.setFailed(error.message);
+                core.debug(error.message);
         }
     });
 }
 run();
+
+
+/***/ }),
+
+/***/ 2063:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.promptForJson = exports.promptForText = void 0;
+function promptForText(fileName, sourceCodeWithLineNumber) {
+    return `Act as a code guard that has deep knowledge of frontend software development, you will review the pull request files change below for a project is written in Typescript. Always start your suggestions with 'As a codeguard, here are my suggestions' and mention file name. Please provide suggestions for making the code more readable, maintainable and secure, mentioning line numbers with each suggestion and only provide suggestions and one line code snippets corresponding to those lines of suggestion:
+    ${fileName}
+    \`\`\`ts
+    ${sourceCodeWithLineNumber}
+    \`\`\``;
+}
+exports.promptForText = promptForText;
+function promptForJson(sourceCodeWithLineNumber) {
+    return `Act as a code guard that has deep knowledge of software development, you will review the pull request files change below for a project is written in Typescript. Please provide suggestions for making the code more readable,maintainable and secure in the format of a json object, property key of the json object uses the line number as key value and value of the property is the suggestion and reason without any code block. please only reply the json object, not no additional text.
+    \`\`\`ts
+    ${sourceCodeWithLineNumber}
+    \`\`\``;
+}
+exports.promptForJson = promptForJson;
 
 
 /***/ }),
@@ -185,7 +235,7 @@ run();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.extractCommitHash = exports.addLineNumbers = void 0;
+exports.isSuggestions = exports.getChangedLineNumbers = exports.extractCommitHash = exports.addLineNumbers = void 0;
 function addLineNumbers(text) {
     const lines = text.split('\n');
     let result = '';
@@ -204,6 +254,48 @@ function extractCommitHash(url) {
     return null;
 }
 exports.extractCommitHash = extractCommitHash;
+function getChangedLineNumbers(filePatch) {
+    const lines = filePatch.split('\n');
+    const changedLineNumbers = [];
+    for (const line of lines) {
+        if (line.startsWith('@@')) {
+            // eslint-disable-next-line no-useless-escape
+            const match = line.match(/@@ \-(\d+),(\d+) \+(\d+),(\d+) @@/);
+            if (match) {
+                const [, , , newStart, newLength] = match;
+                changedLineNumbers.push({
+                    start: +newStart,
+                    end: +newStart + +newLength - 1
+                });
+            }
+        }
+    }
+    return changedLineNumbers;
+}
+exports.getChangedLineNumbers = getChangedLineNumbers;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function isSuggestions(obj) {
+    if (typeof obj === 'object' && obj !== null) {
+        return false;
+    }
+    for (const key in obj) {
+        if (!obj.hasOwnProperty(key)) {
+            continue;
+        }
+        const line = obj[key];
+        if (typeof line !== 'object') {
+            return false;
+        }
+        if (typeof line.suggestion !== 'string') {
+            return false;
+        }
+        if (typeof line.reason !== 'string') {
+            return false;
+        }
+    }
+    return true;
+}
+exports.isSuggestions = isSuggestions;
 
 
 /***/ }),

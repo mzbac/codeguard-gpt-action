@@ -17,3 +17,61 @@ export function extractCommitHash(url: string): string | null {
   }
   return null
 }
+
+export function getChangedLineNumbers(
+  filePatch: string
+): {start: number; end: number}[] {
+  const lines = filePatch.split('\n')
+  const changedLineNumbers: {start: number; end: number}[] = []
+  for (const line of lines) {
+    if (line.startsWith('@@')) {
+      // eslint-disable-next-line no-useless-escape
+      const match = line.match(/@@ \-(\d+),(\d+) \+(\d+),(\d+) @@/)
+      if (match) {
+        const [, , , newStart, newLength] = match
+        changedLineNumbers.push({
+          start: +newStart,
+          end: +newStart + +newLength - 1
+        })
+      }
+    }
+  }
+  return changedLineNumbers
+}
+
+export type Suggestion = {
+  suggestion: string
+  reason: string
+}
+
+export type Suggestions = {
+  [line: string]: Suggestion
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function isSuggestions(obj: any): obj is Suggestions {
+  if (typeof obj === 'object' && obj !== null) {
+    return false
+  }
+
+  for (const key in obj) {
+    if (!obj.hasOwnProperty(key)) {
+      continue
+    }
+
+    const line = obj[key]
+    if (typeof line !== 'object') {
+      return false
+    }
+
+    if (typeof line.suggestion !== 'string') {
+      return false
+    }
+
+    if (typeof line.reason !== 'string') {
+      return false
+    }
+  }
+
+  return true
+}
