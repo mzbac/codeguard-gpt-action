@@ -145,11 +145,11 @@ const client_1 = __nccwpck_require__(1565);
 const prompt_1 = __nccwpck_require__(2063);
 const utils_1 = __nccwpck_require__(918);
 const octokit = new action_1.Octokit();
-const extensions = ['ts', 'tsx'];
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const pullNumber = parseInt(process.env.PULL_NUMBER);
+            const extensions = core.getInput('extensions').split(',');
+            const pullNumber = parseInt(core.getInput('number'));
             const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
             const files = yield octokit.request(`GET /repos/${owner}/${repo}/pulls/${pullNumber}/files`);
             for (const file of files.data) {
