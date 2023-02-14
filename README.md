@@ -1,6 +1,6 @@
 # CodeGuard PR Review by ChatGPT
 
-Get reliable and efficient code reviews for your pull requests with the help of OpenAI's ChatGPT Plus, available exclusively to paid users.
+Get reliable and efficient code reviews for your pull requests with the help of OpenAI's ChatGPT Plus, available exclusively to paid version of ChatGPT (AKA ChatGPT Plus) to making it easier to use without having to worry about the limitations of the free version.
 
 ## Features
 
