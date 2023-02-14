@@ -50,7 +50,7 @@ export type Suggestions = {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function isSuggestions(obj: any): obj is Suggestions {
-  if (typeof obj === 'object' && obj !== null) {
+  if (typeof obj === 'object' && obj === null) {
     return false
   }
 
