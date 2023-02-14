@@ -275,7 +275,7 @@ function getChangedLineNumbers(filePatch) {
 exports.getChangedLineNumbers = getChangedLineNumbers;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isSuggestions(obj) {
-    if (typeof obj === 'object' && obj !== null) {
+    if (typeof obj === 'object' && obj === null) {
         return false;
     }
     for (const key in obj) {
