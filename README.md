@@ -38,7 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_COOKIES: ${{ secrets.CHATGPT_COOKIES }}
           CHATGPT_AUTH_TOKEN: ${{ secrets.CHATGPT_AUTH_TOKEN }}
-          CODEGUARD_COMMENT_BY_LINE: true
+          CODEGUARD_COMMENT_BY_LINE: false
 ```
 
 The action will be triggered every time a pull request is opened or updated.
