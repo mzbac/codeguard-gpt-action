@@ -9,6 +9,46 @@ module.exports = JSON.parse('[[[0,44],"disallowed_STD3_valid"],[[45,46],"valid"]
 
 /***/ }),
 
+/***/ 7984:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getSuggestions = void 0;
+/* eslint-disable filenames/match-regex */
+/* eslint-disable sort-imports */
+const chatgpt_plus_api_client_1 = __nccwpck_require__(8389);
+const prompt_1 = __nccwpck_require__(2063);
+function getSuggestions(textWithLineNumber, linesToReview) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
+            prompt: (0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(','))
+        });
+        let suggestions;
+        try {
+            suggestions = JSON.parse(response.message.content.parts[0]);
+        }
+        catch (err) {
+            throw new Error(`ChatGPT response is not a valid json:\n ${response.message.content.parts[0]}`);
+        }
+        return suggestions;
+    });
+}
+exports.getSuggestions = getSuggestions;
+
+
+/***/ }),
+
 /***/ 1565:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
@@ -46,9 +86,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.postCommentToPR = exports.addCommentToPR = exports.getRawFileContent = void 0;
+exports.processSuggestions = exports.postCommentToPR = exports.addCommentToPR = exports.getRawFileContent = void 0;
+/* eslint-disable sort-imports */
 const core = __importStar(__nccwpck_require__(2186));
 const node_fetch_1 = __importDefault(__nccwpck_require__(6882));
+const utils_1 = __nccwpck_require__(918);
 function getRawFileContent(url) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
@@ -94,11 +136,26 @@ function postCommentToPR(owner, repo, pullNumber, comment, octokit) {
             core.debug(`Comment posted successfully: ${result.data.html_url}`);
         }
         catch (error) {
-            core.debug(`Failed to post comment: ${error}`);
+            core.error(`Failed to post comment: ${error}`);
         }
     });
 }
 exports.postCommentToPR = postCommentToPR;
+function processSuggestions(file, suggestions, owner, repo, pullNumber, octokit, changedLines) {
+    return __awaiter(this, void 0, void 0, function* () {
+        for (const line in suggestions) {
+            if (changedLines.some(({ start, end }) => start <= Number(line) && Number(line) <= end)) {
+                yield addCommentToPR(owner, repo, pullNumber, file.filename, `
+### Line ${line}
+## CodeGuard Suggestions
+**Suggestion:** ${suggestions[line].suggestion}
+**Reason:** ${suggestions[line].reason}\n
+`, (0, utils_1.extractCommitHash)(file.raw_url), Number(line), octokit);
+            }
+        }
+    });
+}
+exports.processSuggestions = processSuggestions;
 
 
 /***/ }),
@@ -142,6 +199,7 @@ const core = __importStar(__nccwpck_require__(2186));
 const action_1 = __nccwpck_require__(1231);
 const chatgpt_plus_api_client_1 = __nccwpck_require__(8389);
 const client_1 = __nccwpck_require__(1565);
+const chatgptClient_1 = __nccwpck_require__(7984);
 const prompt_1 = __nccwpck_require__(2063);
 const utils_1 = __nccwpck_require__(918);
 const octokit = new action_1.Octokit();
@@ -158,30 +216,10 @@ function run() {
                     const text = yield (0, client_1.getRawFileContent)(file.raw_url);
                     const textWithLineNumber = (0, utils_1.addLineNumbers)(text);
                     if (process.env.CODEGUARD_COMMENT_BY_LINE) {
-                        const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
-                            prompt: (0, prompt_1.promptForJson)(textWithLineNumber)
-                        });
-                        let suggestions;
-                        try {
-                            suggestions = JSON.parse(response.message.content.parts[0]);
-                        }
-                        catch (err) {
-                            throw new Error(`ChatGPT response is not a valid json:\n ${response.message.content.parts[0]}`);
-                        }
-                        if (!(0, utils_1.isSuggestions)(suggestions)) {
-                            throw new Error(`ChatGPT response is not of type Suggestions\n${JSON.stringify(suggestions)}`);
-                        }
                         const changedLines = (0, utils_1.getChangedLineNumbers)(file.patch);
-                        for (const line in suggestions) {
-                            if (changedLines.some(({ start, end }) => start <= Number(line) && Number(line) <= end)) {
-                                yield (0, client_1.addCommentToPR)(owner, repo, pullNumber, file.filename, `
-### Line ${line}
-## CodeGuard Suggestions
-**Suggestion:** ${suggestions[line].suggestion}
-**Reason:** ${suggestions[line].reason}\n
-`, (0, utils_1.extractCommitHash)(file.raw_url), Number(line), octokit);
-                            }
-                        }
+                        const suggestions = yield (0, chatgptClient_1.getSuggestions)(textWithLineNumber, changedLines);
+                        (0, utils_1.validateSuggestions)(suggestions);
+                        yield (0, client_1.processSuggestions)(file, suggestions, owner, repo, pullNumber, octokit, changedLines);
                     }
                     else {
                         const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
@@ -218,11 +256,13 @@ function promptForText(fileName, sourceCodeWithLineNumber) {
     \`\`\``;
 }
 exports.promptForText = promptForText;
-function promptForJson(sourceCodeWithLineNumber) {
-    return `Act as a code guard that has deep knowledge of software development, you will review the pull request files change below for a project is written in Typescript. Please provide suggestions for making the code more readable,maintainable and secure in the format of a json object, property key of the json object uses the line number as key value and value of the property is the suggestion and reason without any code block. please only reply the json object, not no additional text.
+function promptForJson(sourceCodeWithLineNumber, linesToReview) {
+    return `Act as a code guard with deep knowledge of frontend software development, review the code below for a project written in TypeScript.
     \`\`\`ts
     ${sourceCodeWithLineNumber}
-    \`\`\``;
+    \`\`\`
+    Please provide suggestions for ${linesToReview} to making the code more readable, maintainable and secure in the format of a json object, property key of the json object uses the line number as key value and value of the property is an object for suggestion and reason without any code block. please only reply the json string without any additional text.
+    `;
 }
 exports.promptForJson = promptForJson;
 
@@ -235,7 +275,7 @@ exports.promptForJson = promptForJson;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.isSuggestions = exports.getChangedLineNumbers = exports.extractCommitHash = exports.addLineNumbers = void 0;
+exports.validateSuggestions = exports.fixMultiLineSuggestions = exports.isSuggestions = exports.getChangedLineNumbers = exports.extractCommitHash = exports.addLineNumbers = void 0;
 function addLineNumbers(text) {
     const lines = text.split('\n');
     let result = '';
@@ -259,8 +299,7 @@ function getChangedLineNumbers(filePatch) {
     const changedLineNumbers = [];
     for (const line of lines) {
         if (line.startsWith('@@')) {
-            // eslint-disable-next-line no-useless-escape
-            const match = line.match(/@@ \-(\d+),(\d+) \+(\d+),(\d+) @@/);
+            const match = line.match(/@@ \\-(\d+),(\d+) \+(\d+),(\d+) @@/);
             if (match) {
                 const [, , , newStart, newLength] = match;
                 changedLineNumbers.push({
@@ -296,6 +335,21 @@ function isSuggestions(obj) {
     return true;
 }
 exports.isSuggestions = isSuggestions;
+function fixMultiLineSuggestions(suggestions) {
+    const fixedSuggestions = {};
+    for (const [key, suggestion] of Object.entries(suggestions)) {
+        const index = key.includes('-') ? Number(key.split('-')[0]) : Number(key);
+        fixedSuggestions[index] = suggestion;
+    }
+    return fixedSuggestions;
+}
+exports.fixMultiLineSuggestions = fixMultiLineSuggestions;
+function validateSuggestions(suggestions) {
+    if (!isSuggestions(fixMultiLineSuggestions(suggestions))) {
+        throw new Error(`ChatGPT response is not of type Suggestions\n${JSON.stringify(suggestions)}`);
+    }
+}
+exports.validateSuggestions = validateSuggestions;
 
 
 /***/ }),

@@ -1,6 +1,8 @@
+/* eslint-disable sort-imports */
 import * as core from '@actions/core'
 import {Octokit} from '@octokit/action'
 import fetch from 'node-fetch'
+import {extractCommitHash, Suggestions} from './utils'
 
 export async function getRawFileContent(
   url: string
@@ -62,6 +64,53 @@ export async function postCommentToPR(
     )
     core.debug(`Comment posted successfully: ${result.data.html_url}`)
   } catch (error) {
-    core.debug(`Failed to post comment: ${error}`)
+    core.error(`Failed to post comment: ${error}`)
+  }
+}
+
+export type GitFile = {
+  sha: string
+  filename: string
+  status: string
+  additions: number
+  deletions: number
+  changes: number
+  blob_url: string
+  raw_url: string
+  contents_url: string
+  patch: string
+}
+
+export async function processSuggestions(
+  file: GitFile,
+  suggestions: Suggestions,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  octokit: Octokit,
+  changedLines: {start: number; end: number}[]
+): Promise<void> {
+  for (const line in suggestions) {
+    if (
+      changedLines.some(
+        ({start, end}) => start <= Number(line) && Number(line) <= end
+      )
+    ) {
+      await addCommentToPR(
+        owner,
+        repo,
+        pullNumber,
+        file.filename,
+        `
+### Line ${line}
+## CodeGuard Suggestions
+**Suggestion:** ${suggestions[line].suggestion}
+**Reason:** ${suggestions[line].reason}\n
+`,
+        extractCommitHash(file.raw_url)!,
+        Number(line),
+        octokit
+      )
+    }
   }
 }
