@@ -31,14 +31,14 @@ jobs:
     name: ChatGPT Plus review PR
     steps:
       - name: ChatGPT Plus review PR
-        uses: mzbac/codeguard-gpt-action@0.0.2
+        uses: mzbac/codeguard-gpt-action@0.0.4
         with:
           number: ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHATGPT_COOKIES: ${{ secrets.CHATGPT_COOKIES }}
           CHATGPT_AUTH_TOKEN: ${{ secrets.CHATGPT_AUTH_TOKEN }}
-          CODEGUARD_COMMENT_BY_LINE: false
+          CODEGUARD_COMMENT_BY_LINE: true
 ```
 
 The action will be triggered every time a pull request is opened or updated.
