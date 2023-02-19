@@ -30,13 +30,21 @@ exports.getSuggestions = void 0;
 const chatgpt_plus_api_client_1 = __nccwpck_require__(8389);
 const prompt_1 = __nccwpck_require__(2063);
 function getSuggestions(textWithLineNumber, linesToReview) {
+    var _a, _b, _c;
     return __awaiter(this, void 0, void 0, function* () {
         const response = yield (0, chatgpt_plus_api_client_1.sendPostRequest)({
             prompt: (0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(','))
         });
+        // extract the json from the response
+        const result = (_c = (_b = (_a = response === null || response === void 0 ? void 0 : response.message) === null || _a === void 0 ? void 0 : _a.content) === null || _b === void 0 ? void 0 : _b.parts[0]) !== null && _c !== void 0 ? _c : '';
+        const startIndex = result.indexOf('{');
+        const endIndex = result.lastIndexOf('}');
+        const json = startIndex !== -1 && endIndex !== -1 && endIndex > startIndex
+            ? result.substring(startIndex, endIndex + 1)
+            : '';
         let suggestions;
         try {
-            suggestions = JSON.parse(response.message.content.parts[0]);
+            suggestions = JSON.parse(json);
         }
         catch (err) {
             throw new Error(`ChatGPT response is not a valid json:\n ${response.message.content.parts[0]}`);
