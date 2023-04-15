@@ -1,7 +1,7 @@
 /* eslint-disable sort-imports */
 import * as core from '@actions/core'
 import {Octokit} from '@octokit/action'
-import {sendPostRequest} from 'chatgpt-plus-api-client'
+import {Configuration, OpenAIApi} from 'openai'
 import {getRawFileContent, postCommentToPR, processSuggestions} from './client'
 import {getSuggestions} from './chatgptClient'
 import {promptForText} from './prompt'
@@ -12,6 +12,11 @@ import {
 } from './utils'
 
 const octokit = new Octokit()
+
+const configuration = new Configuration({
+  apiKey: process.env.OPENAI_API_KEY
+})
+const openai = new OpenAIApi(configuration)
 
 async function run(): Promise<void> {
   try {
@@ -50,7 +55,8 @@ async function run(): Promise<void> {
             changedLines
           )
         } else {
-          const response = await sendPostRequest({
+          const response = await openai.createCompletion({
+            model: 'text-davinci-003',
             prompt: promptForText(file.filename, textWithLineNumber)
           })
 
@@ -58,7 +64,7 @@ async function run(): Promise<void> {
             owner,
             repo,
             pullNumber,
-            response.message.content.parts[0],
+            response.data.choices[0].text ?? '',
             octokit
           )
         }

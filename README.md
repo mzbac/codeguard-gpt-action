@@ -36,8 +36,7 @@ jobs:
           number: ${{ github.event.pull_request.number }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          CHATGPT_COOKIES: ${{ secrets.CHATGPT_COOKIES }}
-          CHATGPT_AUTH_TOKEN: ${{ secrets.CHATGPT_AUTH_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CODEGUARD_COMMENT_BY_LINE: true
 ```
 
@@ -45,10 +44,7 @@ The action will be triggered every time a pull request is opened or updated.
 
 Note that you need to define the following secrets in your GitHub repository:
 
-- `CHATGPT_COOKIES`: The cookies required to access the OpenAI API.
-- `CHATGPT_AUTH_TOKEN`: The authentication token required to access the OpenAI API.
-
-To obtain the values for the CHATGPT_COOKIES and CHATGPT_AUTH_TOKEN secrets that are required to use the CodeGuard PR Review action, you can follow the instructions provided in the documentation [here](https://github.com/mzbac/chatgpt-plus-api-client#getting-chatgpt_cookies-from-cookies)
+- `OPENAI_API_KEY`: The cookies required to access the OpenAI API.
 
 You can also set the `CODEGUARD_COMMENT_BY_LINE` environment variable to true if you want ChatGPT to comment on a specific line of code.
 This will trigger the action every time a pull request is opened or updated, and will provide a thorough review of the pull request using the advanced natural language processing technology of OpenAI's ChatGPT.
