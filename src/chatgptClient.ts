@@ -13,16 +13,20 @@ export async function getSuggestions(
   textWithLineNumber: string,
   linesToReview: {start: number; end: number}[]
 ): Promise<Suggestions> {
+  const prompt = promptForJson(
+    textWithLineNumber,
+    linesToReview.map(({start, end}) => `line ${start}-${end}`).join(',')
+  )
+
   const response = await openai.createCompletion({
     model: 'text-davinci-003',
-    prompt: promptForJson(
-      textWithLineNumber,
-      linesToReview.map(({start, end}) => `line ${start}-${end}`).join(',')
-    )
+    max_tokens: 2048,
+    prompt
   })
 
   // extract the json from the response
   const result = response.data.choices[0].text ?? ''
+
   const startIndex = result.indexOf('{')
   const endIndex = result.lastIndexOf('}')
   const json =

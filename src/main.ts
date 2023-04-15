@@ -37,7 +37,6 @@ async function run(): Promise<void> {
         const textWithLineNumber = addLineNumbers(text!)
         if (process.env.CODEGUARD_COMMENT_BY_LINE) {
           const changedLines = getChangedLineNumbers(file.patch)
-
           const suggestions = await getSuggestions(
             textWithLineNumber,
             changedLines
@@ -57,6 +56,7 @@ async function run(): Promise<void> {
         } else {
           const response = await openai.createCompletion({
             model: 'text-davinci-003',
+            max_tokens: 2048,
             prompt: promptForText(file.filename, textWithLineNumber)
           })
 
