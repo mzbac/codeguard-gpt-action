@@ -49,8 +49,11 @@ function run() {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const extensions = core.getInput('extensions').split(',');
-            const pullNumber = parseInt(core.getInput('number'));
+            // const extensions = core.getInput('extensions').split(',')
+            //
+            // const pullNumber = parseInt(core.getInput('number'))
+            const extensions = ['ts'];
+            const pullNumber = 2;
             const [owner, repo] = process.env.GITHUB_REPOSITORY.split('/');
             const files = yield octokit.request(`GET /repos/${owner}/${repo}/pulls/${pullNumber}/files`);
             for (const file of files.data) {
@@ -67,6 +70,7 @@ function run() {
                     else {
                         const response = yield openai.createCompletion({
                             model: 'text-davinci-003',
+                            max_tokens: 2048,
                             prompt: (0, prompt_1.promptForText)(file.filename, textWithLineNumber)
                         });
                         yield (0, client_1.postCommentToPR)(owner, repo, pullNumber, (_a = response.data.choices[0].text) !== null && _a !== void 0 ? _a : '', octokit);

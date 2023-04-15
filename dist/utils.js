@@ -24,7 +24,7 @@ function getChangedLineNumbers(filePatch) {
     const changedLineNumbers = [];
     for (const line of lines) {
         if (line.startsWith('@@')) {
-            const match = line.match(/@@ \\-(\d+),(\d+) \+(\d+),(\d+) @@/);
+            const match = line.match(/@@ -(\d+),(\d+) \+(\d+),(\d+) @@/);
             if (match) {
                 const [, , , newStart, newLength] = match;
                 changedLineNumbers.push({

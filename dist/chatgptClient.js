@@ -21,16 +21,17 @@ const openai = new openai_1.OpenAIApi(configuration);
 function getSuggestions(textWithLineNumber, linesToReview) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
+        let prompt = (0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(','));
+        console.log(prompt);
         const response = yield openai.createCompletion({
             model: 'text-davinci-003',
-            prompt: (0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(','))
+            max_tokens: 2048,
+            prompt: prompt
         });
         // extract the json from the response
         const result = (_a = response.data.choices[0].text) !== null && _a !== void 0 ? _a : '';
-        // eslint-disable-next-line no-console
-        console.log((0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(',')));
-        // eslint-disable-next-line no-console
-        console.log(response.data);
+        console.log(result);
+        // console.log(JSON.parse(response.data.choices[0].text ?? ''))
         const startIndex = result.indexOf('{');
         const endIndex = result.lastIndexOf('}');
         const json = startIndex !== -1 && endIndex !== -1 && endIndex > startIndex
