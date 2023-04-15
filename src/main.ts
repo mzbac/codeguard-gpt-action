@@ -34,6 +34,7 @@ async function run(): Promise<void> {
 
       if (extensions.includes(extension)) {
         const text = await getRawFileContent(file.raw_url)
+          // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
         const textWithLineNumber = addLineNumbers(text!)
         if (process.env.CODEGUARD_COMMENT_BY_LINE) {
           const changedLines = getChangedLineNumbers(file.patch)
