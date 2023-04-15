@@ -8,7 +8,7 @@ jobs:
     name: ChatGPT review PR
     steps:
       - name: ChatGPT review PR
-        uses: jacopocarlini/codeguard-gpt-action@HEAD
+        uses: jacopocarlini/codeguard-gpt-action@test2
         with:
           number: ${{ github.event.pull_request.number }}
         env:
