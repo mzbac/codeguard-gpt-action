@@ -23,6 +23,16 @@ export async function getSuggestions(
 
   // extract the json from the response
   const result = response.data.choices[0].text ?? ''
+
+  // eslint-disable-next-line no-console
+  console.log(
+    promptForJson(
+      textWithLineNumber,
+      linesToReview.map(({start, end}) => `line ${start}-${end}`).join(',')
+    )
+  )
+  // eslint-disable-next-line no-console
+  console.log(response.data)
   const startIndex = result.indexOf('{')
   const endIndex = result.lastIndexOf('}')
   const json =

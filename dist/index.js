@@ -34,6 +34,10 @@ function getSuggestions(textWithLineNumber, linesToReview) {
         });
         // extract the json from the response
         const result = (_a = response.data.choices[0].text) !== null && _a !== void 0 ? _a : '';
+        // eslint-disable-next-line no-console
+        console.log((0, prompt_1.promptForJson)(textWithLineNumber, linesToReview.map(({ start, end }) => `line ${start}-${end}`).join(',')));
+        // eslint-disable-next-line no-console
+        console.log(response.data);
         const startIndex = result.indexOf('{');
         const endIndex = result.lastIndexOf('}');
         const json = startIndex !== -1 && endIndex !== -1 && endIndex > startIndex
